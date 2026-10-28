@@ -1,7 +1,7 @@
 import {
-  Activity, ArrowDownRight, ArrowUpRight, BookOpen, BrainCircuit, CalendarDays,
+  Activity, BrainCircuit, CalendarDays,
   ChartNoAxesCombined, ChevronDown, CircleHelp, Clock3, Database, GraduationCap,
-  LayoutDashboard, Lightbulb, Settings2, ShieldCheck, Sparkles, Target, UserRound,
+  LayoutDashboard, Lightbulb, ShieldCheck, Sparkles, Target, UserRound,
 } from "lucide-react";
 
 const navItems = [
