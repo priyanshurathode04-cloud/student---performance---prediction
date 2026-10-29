@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { getSupabaseBrowserClient } from "../lib/supabase";
 import {
   Activity, BrainCircuit, CalendarDays, ChartNoAxesCombined, ChevronDown,
   CircleHelp, Clock3, Database, GraduationCap, LayoutDashboard, Lightbulb,
@@ -95,6 +97,83 @@ export default function DashboardPage() {
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [fullName, setFullName] = useState("");
+  const [studentIdInput, setStudentIdInput] = useState("");
+  const [password, setPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
+  const [savedCount, setSavedCount] = useState(0);
+  const [history, setHistory] = useState<Array<{ id: string; predicted_score: number; created_at: string }>>([]);
+  const supabase = getSupabaseBrowserClient();
+
+  useEffect(() => {
+    if (!supabase) { setAuthReady(true); return; }
+    let alive = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (alive) { setSession(data.session); setAuthReady(true); }
+    }).catch(() => { if (alive) setAuthReady(true); });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession); setAuthReady(true);
+    });
+    return () => { alive = false; listener.subscription.unsubscribe(); };
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!supabase || !session?.user) { setHistory([]); return; }
+    let alive = true;
+    supabase.from("predictions").select("id,predicted_score,created_at")
+      .order("created_at", { ascending: false }).limit(5)
+      .then(({ data }) => { if (alive && data) setHistory(data); });
+    return () => { alive = false; };
+  }, [supabase, session?.user.id, savedCount]);
+
+  async function handleAuth(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthError(""); setAuthNotice("");
+    if (!supabase) { setAuthError("Supabase is not configured yet. Add the frontend environment variables described below."); return; }
+    const normalizedId = studentIdInput.trim().toUpperCase();
+    if (authMode === "signin" && !/^STU-[A-F0-9]{12}$/.test(normalizedId)) {
+      setAuthError("Enter your Student ID in the format STU- followed by 12 hexadecimal characters."); return;
+    }
+    if (password.length < 8) { setAuthError("Use a password with at least 8 characters."); return; }
+    setAuthLoading(true);
+    try {
+      if (authMode === "signup") {
+        const randomBytes = new Uint8Array(6);
+        crypto.getRandomValues(randomBytes);
+        const generatedId = "STU-" + Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase();
+        const generatedEmail = generatedId.toLowerCase() + "@students.example.com";
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: generatedEmail, password,
+          options: { data: { student_id: generatedId, full_name: fullName.trim() || "Student" } },
+        });
+        if (signUpError) throw signUpError;
+        setStudentIdInput(generatedId);
+        if (data.session) {
+          setSession(data.session);
+          setAuthNotice("Account created. Save your Student ID for future sign-in: " + generatedId);
+        } else {
+          setAuthNotice("Account created. Your Student ID is " + generatedId + ". If confirmation is enabled, this prototype cannot receive confirmation email; configure email confirmation in Supabase for testing.");
+        }
+      } else {
+        const email = normalizedId.toLowerCase() + "@students.example.com";
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) throw signInError;
+        setSession(data.session);
+      }
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : "Authentication failed. Please try again.");
+    } finally { setAuthLoading(false); }
+  }
+
+  async function handleSignOut() {
+    if (supabase) await supabase.auth.signOut();
+    setSession(null); setPrediction(null); setHistory([]);
+  }
 
   async function handlePredict(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,12 +192,50 @@ export default function DashboardPage() {
       }
       const result = (await response.json()) as Prediction;
       setPrediction(result);
+      if (supabase && session?.user) {
+        const { error: saveError } = await supabase.from("predictions").insert({
+          user_id: session.user.id, features, predicted_score: result.predicted_score,
+          model_name: result.model_name, dataset: result.dataset, guidance: result.guidance,
+        });
+        if (saveError) setError("Prediction succeeded, but saving it to your profile failed: " + saveError.message);
+        else setSavedCount((count) => count + 1);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not connect to the prediction API.");
     } finally {
       setLoading(false);
     }
   }
+
+  if (!authReady) {
+    return <main className="auth-screen"><section className="auth-card"><div className="brand-mark"><GraduationCap size={22} /></div><h1>StudyInsight</h1><p>Checking your student session…</p></section></main>;
+  }
+
+  if (!session) {
+    return (
+      <main className="auth-screen">
+        <section className="auth-card">
+          <div className="brand-mark auth-mark"><GraduationCap size={24} /></div>
+          <div className="eyebrow">Student workspace</div>
+          <h1>{authMode === "signin" ? "Welcome back" : "Create your student account"}</h1>
+          <p className="auth-description">{authMode === "signin" ? "Sign in with your unique Student ID and password." : "Create a private account. We will generate your unique Student ID."}</p>
+          {!supabase && <div className="api-message api-error" role="alert"><AlertCircle size={18} /><div><strong>Supabase setup required</strong><p>Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to the frontend environment. No credentials are hardcoded in this app.</p></div></div>}
+          <form className="auth-form" onSubmit={handleAuth}>
+            {authMode === "signup" && <label className="prediction-field"><span>Full name (optional)</span><input value={fullName} onChange={(event) => setFullName(event.target.value)} autoComplete="name" maxLength={100} placeholder="Your name" /></label>}
+            {authMode === "signin" && <label className="prediction-field"><span>Student ID</span><input value={studentIdInput} onChange={(event) => setStudentIdInput(event.target.value.toUpperCase())} autoComplete="username" placeholder="STU-1A2B3C4D5E6F" required /></label>}
+            <label className="prediction-field"><span>Password (minimum 8 characters)</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={authMode === "signin" ? "current-password" : "new-password"} minLength={8} required placeholder="Enter your password" /></label>
+            {authError && <div className="api-message api-error" role="alert"><AlertCircle size={18} /><p>{authError}</p></div>}
+            {authNotice && <div className="api-message" role="status"><CheckCircle2 size={18} /><p>{authNotice}</p></div>}
+            <button className="predict-button auth-submit" type="submit" disabled={authLoading || !supabase}>{authLoading ? <><LoaderCircle className="spin-icon" size={16} /> Please wait…</> : authMode === "signin" ? "Sign in" : "Create account"}</button>
+          </form>
+          <p className="auth-switch">{authMode === "signin" ? "New here?" : "Already have an account?"} <button type="button" onClick={() => { setAuthMode(authMode === "signin" ? "signup" : "signin"); setAuthError(""); setAuthNotice(""); }}>{authMode === "signin" ? "Create an account" : "Sign in"}</button></p>
+          <p className="auth-footnote">Each student’s saved predictions are private to their account. Demo model outputs are estimates, not academic decisions.</p>
+        </section>
+      </main>
+    );
+  }
+
+  const currentStudentId = String(session.user.user_metadata?.student_id || "Student account");
 
   return (
     <div className="app-shell">
@@ -149,8 +266,9 @@ export default function DashboardPage() {
             <p className="page-subtitle">Enter your learning habits and request a prediction from the model.</p>
           </div>
           <div className="top-actions">
-            <button className="outline-button" type="button"><CalendarDays size={15} /> Demo model <ChevronDown size={14} /></button>
-            <div className="avatar" aria-label="Demo student profile">S</div>
+            <span className="student-id-chip">{currentStudentId}</span>
+            <button className="outline-button" type="button" onClick={handleSignOut}>Sign out</button>
+            <div className="avatar" aria-label="Signed-in student">{currentStudentId === "Student account" ? "S" : currentStudentId.slice(-1)}</div>
           </div>
         </header>
 
@@ -226,8 +344,10 @@ export default function DashboardPage() {
               <div className="legend"><span><i /> Actual</span><span><i className="green-dot" /> Estimate</span></div>
             </div>
             <div className="panel-body">
-              <div className="demo-note" style={{ marginBottom: 12, padding: "8px 10px", fontSize: 11 }}>This chart remains illustrative; no student history is stored yet.</div>
+              <div className="demo-note" style={{ marginBottom: 12, padding: "8px 10px", fontSize: 11 }}>The line chart is illustrative. Your saved predictions appear in the private history list below.</div>
               <ScoreChart />
+              <h3 className="result-subtitle">Recent saved predictions</h3>
+              {history.length ? <ul className="guidance-list">{history.map((item) => <li key={item.id}>{Number(item.predicted_score).toFixed(1)} / 100 · {new Date(item.created_at).toLocaleString()}</li>)}</ul> : <p className="panel-description">No saved predictions yet. Run a prediction to start your private history.</p>
             </div>
           </section>
 
