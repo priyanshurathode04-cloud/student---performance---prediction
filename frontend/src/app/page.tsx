@@ -111,6 +111,7 @@ export default function DashboardPage() {
   const [authNotice, setAuthNotice] = useState("");
   const [savedCount, setSavedCount] = useState(0);
   const [history, setHistory] = useState<Array<{ id: string; predicted_score: number; created_at: string }>>([]);
+  const [activeNav, setActiveNav] = useState("Overview");
   const supabase = getSupabaseBrowserClient();
 
   useEffect(() => {
@@ -263,10 +264,16 @@ export default function DashboardPage() {
             const targetId = sectionByLabel[label];
             return (
               <button
-                className="nav-item"
+                className={`nav-item ${activeNav === label ? "active" : ""}`}
                 key={label}
                 type="button"
-                onClick={() => document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                aria-current={activeNav === label ? "location" : undefined}
+                onClick={() => {
+                  const target = document.getElementById(targetId);
+                  if (!target) return;
+                  setActiveNav(label);
+                  target.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
               >
                 <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
               </button>
