@@ -6,8 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .model_service import (
     DATASET_DESCRIPTION,
-    DISCLAIMER,
-    MODEL_NAME,
     get_improvement_guidance,
     get_model_metadata,
     model_is_ready,
