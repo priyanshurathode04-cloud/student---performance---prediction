@@ -8,12 +8,12 @@ import {
 
 const items = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
-  { label: "Predict score", href: "/#predict", icon: Target },
+  { label: "Predict score", href: "/predict", icon: Target },
   { label: "Train the model", href: "/train-model", icon: BrainCircuit },
   { label: "Improve my performance", href: "/improve", icon: Lightbulb },
-  { label: "My progress", href: "/#progress", icon: ChartNoAxesCombined },
-  { label: "Dataset lab", href: "/#dataset", icon: Database },
-  { label: "Account", href: "/#account", icon: UserRound },
+  { label: "My progress", href: "/progress", icon: ChartNoAxesCombined },
+  { label: "Dataset lab", href: "/dataset", icon: Database },
+  { label: "Account", href: "/account", icon: UserRound },
 ];
 
 export default function Sidebar({ active = "Overview", onNavigate }: { active?: string; onNavigate?: (label: string) => void }) {
