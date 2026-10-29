@@ -101,6 +101,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [fullName, setFullName] = useState("");
   const [studentIdInput, setStudentIdInput] = useState("");
@@ -213,7 +214,7 @@ export default function DashboardPage() {
     return <main className="auth-screen"><section className="auth-card"><div className="brand-mark"><GraduationCap size={22} /></div><h1>StudyInsight</h1><p>Checking your student session…</p></section></main>;
   }
 
-  if (!session && supabase) {
+  if (!session && supabase && !demoMode) {
     return (
       <main className="auth-screen">
         <section className="auth-card">
@@ -231,6 +232,7 @@ export default function DashboardPage() {
             <button className="predict-button auth-submit" type="submit" disabled={authLoading || !supabase}>{authLoading ? <><LoaderCircle className="spin-icon" size={16} /> Please wait…</> : authMode === "signin" ? "Sign in" : "Create account"}</button>
           </form>
           <p className="auth-switch">{authMode === "signin" ? "New here?" : "Already have an account?"} <button type="button" onClick={() => { setAuthMode(authMode === "signin" ? "signup" : "signin"); setAuthError(""); setAuthNotice(""); }}>{authMode === "signin" ? "Create an account" : "Sign in"}</button></p>
+          <button className="outline-button" type="button" style={{ width: "100%", marginTop: 10 }} onClick={() => setDemoMode(true)}>Continue in demo mode</button>
           <p className="auth-footnote">Each student’s saved predictions are private to their account. Demo model outputs are estimates, not academic decisions.</p>
         </section>
       </main>
