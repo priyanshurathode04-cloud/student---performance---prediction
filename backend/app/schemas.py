@@ -8,7 +8,7 @@ class HealthResponse(BaseModel):
 
 
 class StudentFeatures(BaseModel):
-    """Input fields aligned to the compact dataset; values must be supplied by the client."""
+    """Input fields aligned to the compact demo dataset."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -28,8 +28,8 @@ class PredictionRequest(BaseModel):
 class PredictionResponse(BaseModel):
     status: str
     message: str
-    predicted_score: float | None = None
-    disclaimer: str = (
-        "Predictions are estimates, not guarantees. Validate the model on representative "
-        "real-world data before using it for educational decisions."
-    )
+    predicted_score: float
+    model_name: str
+    dataset: str
+    guidance: list[str]
+    disclaimer: str
