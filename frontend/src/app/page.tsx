@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "../lib/supabase";
 import {
-  Activity, BrainCircuit, CalendarDays, ChartNoAxesCombined, ChevronDown,
+  Activity, BrainCircuit, CalendarDays, ChartNoAxesCombined,
   CircleHelp, Clock3, Database, GraduationCap, LayoutDashboard, Lightbulb,
   ShieldCheck, Sparkles, Target, UserRound, LoaderCircle, AlertCircle, CheckCircle2,
 } from "lucide-react";
