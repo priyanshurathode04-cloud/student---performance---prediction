@@ -347,7 +347,7 @@ export default function DashboardPage() {
               <div className="demo-note" style={{ marginBottom: 12, padding: "8px 10px", fontSize: 11 }}>The line chart is illustrative. Your saved predictions appear in the private history list below.</div>
               <ScoreChart />
               <h3 className="result-subtitle">Recent saved predictions</h3>
-              {history.length ? <ul className="guidance-list">{history.map((item) => <li key={item.id}>{Number(item.predicted_score).toFixed(1)} / 100 · {new Date(item.created_at).toLocaleString()}</li>)}</ul> : <p className="panel-description">No saved predictions yet. Run a prediction to start your private history.</p>
+              {history.length ? <ul className="guidance-list">{history.map((item) => <li key={item.id}>{Number(item.predicted_score).toFixed(1)} / 100 · {new Date(item.created_at).toLocaleString()}</li>)}</ul> : <p className="panel-description">No saved predictions yet. Run a prediction to start your private history.</p>}
             </div>
           </section>
 
@@ -401,7 +401,7 @@ export default function DashboardPage() {
           </section>
         </div>
 
-        <footer className="footer-note">Student Performance Prediction System · Frontend-to-API integration · Demo estimates only. Authentication, saved student profiles, and real score history are not connected yet.</footer>
+        <footer className="footer-note">Student Performance Prediction System · Frontend-to-API integration · Demo estimates only. Student sign-in and saved prediction history use Supabase when configured. Demo estimates only.</footer>
       </main>
     </div>
   );
