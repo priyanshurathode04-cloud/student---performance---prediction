@@ -275,7 +275,7 @@ export default function DashboardPage() {
             </div>
             <div className="panel-body">
               <div className="dataset-stat"><div className="stat-number">CSV</div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Compact demo dataset</strong><br />100 synthetic rows; missing feature values are imputed during training.</div></div>
-              <div className="dataset-stat"><div className="stat-number">ML</div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Model connected</strong><br />Prediction requests use the backend's trained Extra Trees model.</div></div>
+              <div className="dataset-stat"><div className="stat-number">ML</div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Model connected</strong><br />Prediction requests use the backend&apos;s trained Extra Trees model.</div></div>
               <div className="dataset-stat"><div className="stat-number"><Sparkles size={20} color="var(--green)" /></div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Actionable guidance</strong><br />Suggestions reflect the values submitted in your form.</div></div>
             </div>
           </section>
