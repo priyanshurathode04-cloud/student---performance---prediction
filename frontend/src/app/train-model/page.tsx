@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrainCircuit } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
 
 const steps = [
