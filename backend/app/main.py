@@ -19,11 +19,24 @@ app = FastAPI(
     description="Demo API for estimating student performance with a scikit-learn model.",
 )
 
-# Set FRONTEND_ORIGIN to the deployed frontend origin before deployment.
-allowed_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+# Allow the deployed Vercel frontend and local development. Additional origins
+# can be supplied as a comma-separated FRONTEND_ORIGINS environment variable.
+default_origins = [
+    "https://student-performance-prediction-ldj1-jygp8po4c.vercel.app",
+    "http://localhost:3000",
+]
+configured_origins = [
+    origin.strip()
+    for origin in os.getenv("FRONTEND_ORIGINS", "").split(",")
+    if origin.strip()
+]
+legacy_origin = os.getenv("FRONTEND_ORIGIN", "").strip()
+allowed_origins = list(dict.fromkeys(
+    default_origins + configured_origins + ([legacy_origin] if legacy_origin else [])
+))
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[allowed_origin],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
