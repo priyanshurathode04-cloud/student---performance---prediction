@@ -1,6 +1,6 @@
 import os
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from .model_service import (
@@ -12,6 +12,7 @@ from .model_service import (
     predict_score,
 )
 from .schemas import HealthResponse, PredictionRequest, PredictionResponse
+from .training_service import DatasetValidationError, promote_candidate, train_candidate
 
 app = FastAPI(
     title="Student Performance Prediction API",
@@ -75,3 +76,39 @@ def predict(request: PredictionRequest) -> PredictionResponse:
         guidance=get_improvement_guidance(features),
         disclaimer=DISCLAIMER,
     )
+
+
+
+@app.post("/api/train")
+async def train_model(file: UploadFile = File(...)) -> dict:
+    """Train a candidate model from an explicitly uploaded CSV; never auto-promote."""
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=415, detail="Upload a .csv file.")
+    content = await file.read(12 * 1024 * 1024 + 1)
+    if len(content) > 12 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="CSV uploads are limited to 12 MiB.")
+    try:
+        return train_candidate(content)
+    except DatasetValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Training failed while processing the supplied dataset.") from exc
+
+
+@app.post("/api/train/{candidate_id}/promote")
+def promote_model(candidate_id: str) -> dict:
+    """Promote a candidate only when durable active-model storage is configured."""
+    try:
+        path = promote_candidate(candidate_id)
+    except DatasetValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail="Could not save the active model artifact.") from exc
+    # Clear process cache so the next prediction loads the promoted artifact.
+    from .model_service import _load_trained_model
+    _load_trained_model.cache_clear()
+    return {"status": "ok", "message": "Candidate promoted. The active model cache was cleared.", "active_model_path": path}
