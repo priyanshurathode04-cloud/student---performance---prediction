@@ -27,7 +27,7 @@ button:disabled { cursor: not-allowed; opacity: .65; }
 .nav-label, .eyebrow { text-transform: uppercase; font-size: 10px; letter-spacing: 1.3px; color: var(--muted); }
 .nav-label { padding: 0 12px 12px; }
 .nav-list { display: grid; gap: 5px; }
-.nav-item { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; border-radius: 9px; padding: 11px 12px; color: #a9b9cc; background: transparent; text-align: left; font-size: 12px; }
+.nav-item { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; border-radius: 9px; padding: 11px 12px; color: #a9b9cc; background: transparent; text-align: left; text-decoration: none; font-size: 12px; }
 .nav-item.active { color: #eafff7; background: #15362f; box-shadow: inset 2px 0 var(--green); }
 .nav-item:hover { background: #14243a; }
 .sidebar-bottom { margin-top: auto; border: 1px solid var(--border); background: #101e30; border-radius: 12px; padding: 14px; color: var(--muted); font-size: 11px; line-height: 1.6; }
@@ -152,3 +152,6 @@ button:disabled { cursor: not-allowed; opacity: .65; }
 .auth-footnote { margin-top: 22px; border-top: 1px solid var(--border); padding-top: 16px; }
 .student-id-chip { color: var(--green); border: 1px solid #275547; background: #102b28; padding: 8px 10px; border-radius: 8px; font-size: 10px; font-weight: 700; }
 @media (max-width: 640px) { .auth-card { padding: 24px 20px; } .student-id-chip { display: none; } }
+
+/* Keep sidebar destinations clear of the top edge after anchor navigation. */
+#overview, #predict, #progress, #dataset, #account { scroll-margin-top: 18px; }
