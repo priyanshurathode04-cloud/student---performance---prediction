@@ -155,3 +155,34 @@ button:disabled { cursor: not-allowed; opacity: .65; }
 
 /* Keep sidebar destinations clear of the top edge after anchor navigation. */
 #overview, #predict, #progress, #dataset, #account { scroll-margin-top: 18px; }
+
+
+/* Dedicated workspace navigation and responsive page layouts */
+.destination-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+.destination-card { min-height: 190px; }
+.destination-card .panel-body { display: flex; flex-direction: column; align-items: flex-start; height: 100%; }
+.destination-link { display: inline-flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 18px; color: var(--green); text-decoration: none; font-size: 12px; font-weight: 700; }
+.destination-link:hover { color: #a2f3d8; }
+.history-table { display: grid; gap: 0; }
+.history-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.history-row:last-child { border-bottom: 0; }
+.history-row p { margin: 5px 0 0; }
+.history-row time { text-align: right; }
+@media (max-width: 1100px) { .destination-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .app-shell { display: block; }
+  .sidebar { width: 100%; padding: 12px; border-right: 0; border-bottom: 1px solid var(--border); }
+  .brand { padding: 0 8px 12px; }
+  .sidebar .nav-label { padding-bottom: 8px; }
+  .nav-list { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px; }
+  .nav-item { width: auto; min-width: max-content; padding: 10px; }
+  .sidebar-bottom { display: none; }
+  .main { width: 100%; padding: 20px 14px 24px; }
+  .destination-grid { grid-template-columns: minmax(0, 1fr); }
+  .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .section-grid, .bottom-grid { grid-template-columns: minmax(0, 1fr); }
+  .topbar { align-items: flex-start; flex-direction: column; }
+  .top-actions { flex-wrap: wrap; }
+  .history-row { align-items: flex-start; flex-direction: column; }
+  .history-row time { text-align: left; }
+}
