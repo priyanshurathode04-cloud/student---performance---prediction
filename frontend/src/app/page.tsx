@@ -251,13 +251,14 @@ export default function DashboardPage() {
         <div className="nav-label">Workspace</div>
         <nav className="nav-list" aria-label="Main navigation">
           {navItems.map(({ label, icon: Icon }) => {
-            const targetId = ({
+            const sectionByLabel: Record<string, string> = {
               "Overview": "overview",
               "Predict score": "predict",
               "My progress": "progress",
               "Dataset lab": "dataset",
               "Account": "account",
-            } as const)[label];
+            };
+            const targetId = sectionByLabel[label];
             return (
               <button
                 className="nav-item"
