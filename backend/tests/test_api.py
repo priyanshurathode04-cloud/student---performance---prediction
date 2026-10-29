@@ -53,3 +53,24 @@ def test_prediction_rejects_unknown_features():
     invalid = {**VALID_FEATURES, "student_name": "Not a model feature"}
     response = client.post("/api/predict", json={"features": invalid})
     assert response.status_code == 422
+
+
+
+def test_dataset_info_describes_demo_data():
+    response = client.get("/api/dataset-info")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["target"] == "final_score"
+    assert len(body["features"]) == 7
+    assert "synthetic" in body["note"].lower()
+
+
+def test_training_requires_operator_token(monkeypatch):
+    monkeypatch.delenv("TRAINING_API_TOKEN", raising=False)
+    response = client.post(
+        "/api/train",
+        files={"file": ("students.csv", b"study_hours_per_day,final_score\n1,50\n", "text/csv")},
+    )
+    assert response.status_code == 503
+    assert "TRAINING_API_TOKEN" in response.json()["detail"]
