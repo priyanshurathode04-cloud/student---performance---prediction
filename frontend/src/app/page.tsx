@@ -263,20 +263,15 @@ export default function DashboardPage() {
             };
             const targetId = sectionByLabel[label];
             return (
-              <button
+              <a
                 className={`nav-item ${activeNav === label ? "active" : ""}`}
                 key={label}
-                type="button"
+                href={`#${targetId}`}
                 aria-current={activeNav === label ? "location" : undefined}
-                onClick={() => {
-                  const target = document.getElementById(targetId);
-                  if (!target) return;
-                  setActiveNav(label);
-                  target.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
+                onClick={() => setActiveNav(label)}
               >
                 <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
-              </button>
+              </a>
             );
           })}
         </nav>
