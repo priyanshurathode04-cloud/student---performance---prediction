@@ -106,7 +106,7 @@ async def train_model(file: UploadFile = File(...), x_training_token: str | None
 
 
 @app.post("/api/train/{candidate_id}/promote")
-def promote_model(candidate_id: str, x_training_token: str | None = None) -> dict:
+def promote_model(candidate_id: str, x_training_token: str | None = Header(default=None, alias="X-Training-Token")) -> dict:
     """Promote a candidate only when durable active-model storage is configured."""
     _require_training_token(x_training_token)
     try:
