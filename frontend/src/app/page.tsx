@@ -11,7 +11,7 @@ import {
   ShieldCheck, Sparkles, Target, UserRound, LoaderCircle, AlertCircle, CheckCircle2,
 } from "lucide-react";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://student-performance-prediction-51f4.onrender.com").replace(/\/$/, "");
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, active: true },
@@ -213,7 +213,7 @@ export default function DashboardPage() {
     return <main className="auth-screen"><section className="auth-card"><div className="brand-mark"><GraduationCap size={22} /></div><h1>StudyInsight</h1><p>Checking your student session…</p></section></main>;
   }
 
-  if (!session) {
+  if (!session && supabase) {
     return (
       <main className="auth-screen">
         <section className="auth-card">
@@ -237,10 +237,12 @@ export default function DashboardPage() {
     );
   }
 
-  const currentStudentId = String(session.user.user_metadata?.student_id || "Student account");
+  const currentStudentId = session
+    ? String(session.user.user_metadata?.student_id || "Student account")
+    : "Demo mode";
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" id="overview">
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark"><GraduationCap size={22} /></div>
@@ -248,11 +250,25 @@ export default function DashboardPage() {
         </div>
         <div className="nav-label">Workspace</div>
         <nav className="nav-list" aria-label="Main navigation">
-          {navItems.map(({ label, icon: Icon, active }) => (
-            <button className={`nav-item${active ? " active" : ""}`} key={label} type="button" aria-current={active ? "page" : undefined}>
-              <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
-            </button>
-          ))}
+          {navItems.map(({ label, icon: Icon }) => {
+            const targetId = ({
+              "Overview": "overview",
+              "Predict score": "predict",
+              "My progress": "progress",
+              "Dataset lab": "dataset",
+              "Account": "account",
+            } as const)[label];
+            return (
+              <button
+                className="nav-item"
+                key={label}
+                type="button"
+                onClick={() => document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              >
+                <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
+              </button>
+            );
+          })}
         </nav>
         <div className="sidebar-bottom">
           <div style={{ color: "#b8cce0", marginBottom: 7 }}><span className="online-dot" />Model API integration</div>
@@ -267,16 +283,16 @@ export default function DashboardPage() {
             <h1 className="page-title">Your learning overview</h1>
             <p className="page-subtitle">Enter your learning habits and request a prediction from the model.</p>
           </div>
-          <div className="top-actions">
+          <div className="top-actions" id="account">
             <span className="student-id-chip">{currentStudentId}</span>
-            <button className="outline-button" type="button" onClick={handleSignOut}>Sign out</button>
-            <div className="avatar" aria-label="Signed-in student">{currentStudentId === "Student account" ? "S" : currentStudentId.slice(-1)}</div>
+            {session && <button className="outline-button" type="button" onClick={handleSignOut}>Sign out</button>}
+            <div className="avatar" aria-label={session ? "Signed-in student" : "Demo mode"}>{currentStudentId === "Student account" ? "S" : currentStudentId.slice(-1)}</div>
           </div>
         </header>
 
         <div className="demo-note">
           <CircleHelp size={16} style={{ flex: "0 0 auto", marginTop: 1 }} />
-          <div><strong>Demonstration model.</strong> The API uses a small synthetic dataset. Results are estimates for learning and software demonstration only—not validated real-world predictions or a basis for academic decisions.</div>
+          <div><strong>Demonstration model.</strong> The API uses a small synthetic dataset. Results are estimates for learning and software demonstration only—not validated real-world predictions or a basis for academic decisions. {!supabase && "Demo mode is active because Supabase is not configured; predictions work without signing in, but saved history and accounts are unavailable."}</div>
         </div>
 
         <section className="panel prediction-panel" id="predict">
@@ -327,7 +343,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <div className="metrics-grid">
+        <div className="metrics-grid" id="progress">
           <section className="panel metric-card">
             <div className="metric-heading"><span>Predicted score</span><span className="metric-icon"><Target size={16} /></span></div>
             <div className="metric-value">{prediction ? prediction.predicted_score.toFixed(1) : "—"} <span className="unit">/ 100</span></div>
@@ -372,7 +388,7 @@ export default function DashboardPage() {
           </section>
         </div>
 
-        <div className="bottom-grid">
+        <div className="bottom-grid" id="dataset">
           <section className="panel">
             <div className="panel-header">
               <div><h2 className="panel-title">Factors to explore</h2><p className="panel-description">Inputs currently supported by the model.</p></div>
