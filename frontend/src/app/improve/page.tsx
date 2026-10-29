@@ -20,7 +20,7 @@ export default function ImprovePage() {
         <div className="section-grid">
           {advice.map((item, index) => <section className="panel" key={item.title}><div className="panel-body"><div className="action-row"><div className="action-number">{String(index + 1).padStart(2, "0")}</div><div><h2 className="panel-title">{item.title}</h2><p className="panel-description">{item.detail}</p></div></div></div></section>)}
         </div>
-        <section className="panel"><div className="panel-header"><div><h2 className="panel-title">Turn advice into a plan</h2><p className="panel-description">Use your current habits to get model-generated suggestions as well.</p></div></div><div className="panel-body"><Link className="predict-button" href="/#predict">Get my score estimate and suggestions</Link></div></section>
+        <section className="panel"><div className="panel-header"><div><h2 className="panel-title">Turn advice into a plan</h2><p className="panel-description">Use your current habits to get model-generated suggestions as well.</p></div></div><div className="panel-body"><Link className="predict-button" href="/predict">Get my score estimate and suggestions</Link></div></section>
       </main>
     </div>
   );
