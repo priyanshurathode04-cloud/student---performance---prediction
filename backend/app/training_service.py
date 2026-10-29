@@ -78,6 +78,10 @@ def train_candidate(csv_bytes: bytes) -> dict:
     if selected[TARGET_COLUMN].nunique() < 2:
         raise DatasetValidationError("final_score must contain at least two distinct values.")
 
+    empty_features = [column for column in FEATURE_COLUMNS if selected[column].notna().sum() == 0]
+    if empty_features:
+        raise DatasetValidationError("These required feature columns contain no usable numeric values: " + ", ".join(empty_features))
+
     X = selected[FEATURE_COLUMNS]
     y = selected[TARGET_COLUMN].astype(float)
     X_train, X_test, y_train, y_test = train_test_split(
