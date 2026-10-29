@@ -6,7 +6,10 @@ decisions. The estimator and preprocessing mirror the Streamlit app's Extra Tree
 regression option.
 """
 from functools import lru_cache
+import os
 from pathlib import Path
+
+import joblib
 
 import pandas as pd
 from sklearn.ensemble import ExtraTreesRegressor
@@ -34,7 +37,11 @@ DISCLAIMER = (
 
 @lru_cache(maxsize=1)
 def _load_trained_model():
-    """Load, validate, and fit the demo model once per running API process."""
+    """Load an explicitly promoted model, or fit the bundled demo model."""
+    active_path = os.getenv("ACTIVE_MODEL_PATH", "").strip()
+    if active_path and Path(active_path).is_file():
+        return joblib.load(active_path)
+
     csv_path = Path(__file__).resolve().parents[2] / "data" / "student_performance_compact.csv"
     if not csv_path.is_file():
         raise FileNotFoundError(f"Required demo dataset was not found: {csv_path}")
