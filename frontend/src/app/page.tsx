@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect -- initial state is synchronized with the external Supabase session and history. */
+
 import { FormEvent, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "../lib/supabase";
@@ -129,7 +131,7 @@ export default function DashboardPage() {
       .order("created_at", { ascending: false }).limit(5)
       .then(({ data }) => { if (alive && data) setHistory(data); });
     return () => { alive = false; };
-  }, [supabase, session?.user.id, savedCount]);
+  }, [supabase, session?.user.id, session?.user, savedCount]);
 
   async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
