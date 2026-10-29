@@ -6,6 +6,7 @@ decisions. The estimator and preprocessing mirror the Streamlit app's Extra Tree
 regression option.
 """
 from functools import lru_cache
+import json
 import os
 from pathlib import Path
 
@@ -34,6 +35,32 @@ DISCLAIMER = (
     "not be used to grade, rank, admit, or make other consequential decisions about students."
 )
 
+
+
+
+def get_model_metadata() -> dict[str, str]:
+    """Return truthful metadata for the currently active predictor."""
+    active_path = os.getenv("ACTIVE_MODEL_PATH", "").strip()
+    if active_path and Path(active_path).is_file():
+        metadata_path = Path(active_path).with_suffix(".metadata.json")
+        if metadata_path.is_file():
+            try:
+                metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                dataset = str(metadata.get("dataset", "Uploaded training dataset"))
+                model_name = str(metadata.get("model_name", MODEL_NAME))
+                return {
+                    "model_name": model_name,
+                    "dataset": dataset,
+                    "disclaimer": (
+                        "This model was trained on an uploaded dataset and has not been independently "
+                        "validated for real-world student outcomes, representativeness, or fairness. "
+                        "Use for learning and demonstration only; never for grading, ranking, admissions, "
+                        "or other consequential decisions."
+                    ),
+                }
+            except (OSError, ValueError, TypeError):
+                pass
+    return {"model_name": MODEL_NAME, "dataset": DATASET_DESCRIPTION, "disclaimer": DISCLAIMER}
 
 @lru_cache(maxsize=1)
 def _load_trained_model():
