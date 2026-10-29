@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable react-hooks/set-state-in-effect -- state is populated from asynchronous account/history requests. */
 import { useEffect,useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import Link from "next/link";
