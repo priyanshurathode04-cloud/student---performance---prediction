@@ -1,7 +1,7 @@
 import os
 import hmac
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from .model_service import (
@@ -89,7 +89,7 @@ def _require_training_token(token: str | None) -> None:
 
 
 @app.post("/api/train")
-async def train_model(file: UploadFile = File(...), x_training_token: str | None = None) -> dict:
+async def train_model(file: UploadFile = File(...), x_training_token: str | None = Header(default=None, alias="X-Training-Token")) -> dict:
     """Train a candidate model from an explicitly uploaded CSV; never auto-promote."""
     _require_training_token(x_training_token)
     if not file.filename or not file.filename.lower().endswith(".csv"):
