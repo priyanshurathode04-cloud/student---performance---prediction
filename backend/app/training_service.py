@@ -5,6 +5,7 @@ when ACTIVE_MODEL_PATH points to a durable path configured by the deployment ope
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import uuid
@@ -100,6 +101,19 @@ def train_candidate(csv_bytes: bytes) -> dict:
     CANDIDATE_DIR.mkdir(parents=True, exist_ok=True)
     candidate_path = CANDIDATE_DIR / f"{candidate_id}.joblib"
     joblib.dump(model, candidate_path)
+    candidate_metadata = {
+        "model_name": "Extra Trees Regressor",
+        "dataset": f"Uploaded training dataset ({len(selected)} rows)",
+        "training_rows": int(len(X_train)),
+        "test_rows": int(len(X_test)),
+        "metrics": {
+            "mae": round(float(mean_absolute_error(y_test, predicted)), 3),
+            "rmse": round(rmse, 3),
+            "r2": round(float(r2_score(y_test, predicted)), 3) if len(y_test) >= 2 else None,
+        },
+    }
+    metadata_path = CANDIDATE_DIR / f"{candidate_id}.json"
+    metadata_path.write_text(json.dumps(candidate_metadata), encoding="utf-8")
     importances = model.named_steps["model"].feature_importances_
     return {
         "candidate_id": candidate_id,
@@ -129,9 +143,17 @@ def promote_candidate(candidate_id: str) -> str:
     candidate_path = CANDIDATE_DIR / f"{candidate_id}.joblib"
     if not candidate_path.is_file():
         raise FileNotFoundError("Candidate not found. Training candidates may be lost when the service restarts.")
+    candidate_metadata_path = CANDIDATE_DIR / f"{candidate_id}.json"
+    if not candidate_metadata_path.is_file():
+        raise FileNotFoundError("Candidate metadata not found; retrain the candidate before promoting it.")
+    candidate_metadata = json.loads(candidate_metadata_path.read_text(encoding="utf-8"))
     active_path = Path(active_path_value)
     active_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = active_path.with_suffix(active_path.suffix + ".tmp")
     joblib.dump(joblib.load(candidate_path), temporary_path)
     temporary_path.replace(active_path)
+    metadata_path = active_path.with_suffix(".metadata.json")
+    temporary_metadata_path = metadata_path.with_suffix(metadata_path.suffix + ".tmp")
+    temporary_metadata_path.write_text(json.dumps(candidate_metadata), encoding="utf-8")
+    temporary_metadata_path.replace(metadata_path)
     return str(active_path)
