@@ -1,4 +1,5 @@
 import os
+import hmac
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -79,9 +80,18 @@ def predict(request: PredictionRequest) -> PredictionResponse:
 
 
 
+def _require_training_token(token: str | None) -> None:
+    expected = os.getenv("TRAINING_API_TOKEN", "")
+    if not expected:
+        raise HTTPException(status_code=503, detail="Model training is disabled until TRAINING_API_TOKEN is configured.")
+    if not token or not hmac.compare_digest(token, expected):
+        raise HTTPException(status_code=401, detail="A valid training token is required.")
+
+
 @app.post("/api/train")
-async def train_model(file: UploadFile = File(...)) -> dict:
+async def train_model(file: UploadFile = File(...), x_training_token: str | None = None) -> dict:
     """Train a candidate model from an explicitly uploaded CSV; never auto-promote."""
+    _require_training_token(x_training_token)
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=415, detail="Upload a .csv file.")
     content = await file.read(12 * 1024 * 1024 + 1)
@@ -96,8 +106,9 @@ async def train_model(file: UploadFile = File(...)) -> dict:
 
 
 @app.post("/api/train/{candidate_id}/promote")
-def promote_model(candidate_id: str) -> dict:
+def promote_model(candidate_id: str, x_training_token: str | None = None) -> dict:
     """Promote a candidate only when durable active-model storage is configured."""
+    _require_training_token(x_training_token)
     try:
         path = promote_candidate(candidate_id)
     except DatasetValidationError as exc:
