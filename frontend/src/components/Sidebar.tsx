@@ -16,7 +16,7 @@ const items = [
   { label: "Account", href: "/#account", icon: UserRound },
 ];
 
-export default function Sidebar({ active = "Overview" }: { active?: string }) {
+export default function Sidebar({ active = "Overview", onNavigate }: { active?: string; onNavigate?: (label: string) => void }) {
   return (
     <aside className="sidebar">
       <Link className="brand" href="/" style={{ textDecoration: "none", color: "inherit" }}>
@@ -31,6 +31,7 @@ export default function Sidebar({ active = "Overview" }: { active?: string }) {
             key={label}
             href={href}
             aria-current={active === label ? "page" : undefined}
+            onClick={() => onNavigate?.(label)}
           >
             <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
           </Link>
