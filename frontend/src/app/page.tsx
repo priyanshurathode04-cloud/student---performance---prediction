@@ -240,7 +240,7 @@ export default function DashboardPage() {
 
   return (
     <div className="app-shell" id="overview">
-      <Sidebar active={activeNav} />
+      <Sidebar active={activeNav} onNavigate={setActiveNav} />
 
 
       <main className="main">
