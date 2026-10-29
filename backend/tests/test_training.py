@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from app.training_service import DatasetValidationError, train_candidate
+from app.training_service import DatasetValidationError, promote_candidate, train_candidate
+import app.training_service as training_service
+from app.model_service import get_model_metadata
 
 
 def valid_csv_bytes(rows: int = 40) -> bytes:
@@ -50,3 +52,18 @@ def test_training_rejects_out_of_range_features():
 def test_training_rejects_too_few_rows():
     with pytest.raises(DatasetValidationError, match="At least 20 rows"):
         train_candidate(valid_csv_bytes(10))
+
+
+
+def test_promotion_persists_dataset_metadata_for_predictions(monkeypatch, tmp_path):
+    candidate_dir = tmp_path / "candidates"
+    active_path = tmp_path / "persistent" / "active-model.joblib"
+    monkeypatch.setattr(training_service, "CANDIDATE_DIR", candidate_dir)
+    monkeypatch.setenv("ACTIVE_MODEL_PATH", str(active_path))
+    candidate = train_candidate(valid_csv_bytes(40))
+    promoted_path = promote_candidate(candidate["candidate_id"])
+    assert promoted_path == str(active_path)
+    assert active_path.is_file()
+    metadata = get_model_metadata()
+    assert metadata["dataset"] == "Uploaded training dataset (40 rows)"
+    assert "not been independently validated" in metadata["disclaimer"]
