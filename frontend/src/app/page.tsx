@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect -- initial auth readiness is synchronized with the external Supabase session. */
+
 import { FormEvent, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import Link from "next/link";
