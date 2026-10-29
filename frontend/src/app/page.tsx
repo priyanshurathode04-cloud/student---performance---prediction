@@ -1,8 +1,13 @@
+"use client";
+
+import { FormEvent, useState } from "react";
 import {
-  Activity, BrainCircuit, CalendarDays,
-  ChartNoAxesCombined, ChevronDown, CircleHelp, Clock3, Database, GraduationCap,
-  LayoutDashboard, Lightbulb, ShieldCheck, Sparkles, Target, UserRound,
+  Activity, BrainCircuit, CalendarDays, ChartNoAxesCombined, ChevronDown,
+  CircleHelp, Clock3, Database, GraduationCap, LayoutDashboard, Lightbulb,
+  ShieldCheck, Sparkles, Target, UserRound, LoaderCircle, AlertCircle, CheckCircle2,
 } from "lucide-react";
+
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, active: true },
@@ -12,12 +17,29 @@ const navItems = [
   { label: "Account", icon: UserRound, active: false },
 ];
 
-const factors = [
-  { name: "Study hours", value: 78, label: "—" },
-  { name: "Attendance", value: 66, label: "—" },
-  { name: "Previous score", value: 58, label: "—" },
-  { name: "Practice quizzes", value: 42, label: "—" },
-];
+const fields = [
+  { key: "study_hours_per_day", label: "Study hours per day", min: 0, max: 24, step: 0.5, initial: 2.5, hint: "Time spent studying on a typical day." },
+  { key: "attendance_percent", label: "Attendance", min: 0, max: 100, step: 1, initial: 85, hint: "Percentage of classes attended." },
+  { key: "assignment_completion_percent", label: "Assignment completion", min: 0, max: 100, step: 1, initial: 80, hint: "Percentage of assignments completed." },
+  { key: "practice_quizzes_per_week", label: "Practice quizzes per week", min: 0, max: 100, step: 1, initial: 3, hint: "Number of practice quizzes in a week." },
+  { key: "class_participation_score", label: "Class participation (0–10)", min: 0, max: 10, step: 1, initial: 6, hint: "Self-assessed participation on a 0–10 scale." },
+  { key: "previous_score", label: "Previous score", min: 0, max: 100, step: 1, initial: 70, hint: "Your previous score out of 100." },
+  { key: "sleep_hours", label: "Sleep hours per day", min: 0, max: 24, step: 0.5, initial: 7.5, hint: "Average sleep in a day." },
+] as const;
+
+type FeatureKey = typeof fields[number]["key"];
+type Features = Record<FeatureKey, number>;
+type Prediction = {
+  status: string;
+  message: string;
+  predicted_score: number;
+  model_name: string;
+  dataset: string;
+  guidance: string[];
+  disclaimer: string;
+};
+
+const initialFeatures = Object.fromEntries(fields.map((field) => [field.key, field.initial])) as Features;
 
 function MetricCard({ icon: Icon, label, value, unit, note, accent = "blue" }: {
   icon: typeof Activity; label: string; value: string; unit?: string; note: string; accent?: "blue" | "green";
@@ -69,6 +91,35 @@ function ScoreChart() {
 }
 
 export default function DashboardPage() {
+  const [features, setFeatures] = useState<Features>(initialFeatures);
+  const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handlePredict(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+    setPrediction(null);
+    try {
+      const response = await fetch(`${API_URL}/api/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ features }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.detail || `Prediction request failed (HTTP ${response.status}).`);
+      }
+      const result = (await response.json()) as Prediction;
+      setPrediction(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not connect to the prediction API.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -85,8 +136,8 @@ export default function DashboardPage() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div style={{ color: "#b8cce0", marginBottom: 7 }}><span className="online-dot" />Workspace preview</div>
-          Built around your learning data, with recommendations you can act on.
+          <div style={{ color: "#b8cce0", marginBottom: 7 }}><span className="online-dot" />Model API integration</div>
+          Submit your study habits to receive a demo estimate and suggestions.
         </div>
       </aside>
 
@@ -95,54 +146,106 @@ export default function DashboardPage() {
           <div>
             <div className="eyebrow">Student workspace / Overview</div>
             <h1 className="page-title">Your learning overview</h1>
-            <p className="page-subtitle">A clearer view of your habits, progress, and next steps.</p>
+            <p className="page-subtitle">Enter your learning habits and request a prediction from the model.</p>
           </div>
           <div className="top-actions">
-            <button className="outline-button" type="button"><CalendarDays size={15} /> Sample view <ChevronDown size={14} /></button>
+            <button className="outline-button" type="button"><CalendarDays size={15} /> Demo model <ChevronDown size={14} /></button>
             <div className="avatar" aria-label="Demo student profile">S</div>
           </div>
         </header>
 
         <div className="demo-note">
           <CircleHelp size={16} style={{ flex: "0 0 auto", marginTop: 1 }} />
-          <div><strong>Design preview — illustrative data.</strong> These values and charts are placeholders used to shape the interface. They are not a real student prediction and will be replaced by data from your existing model.</div>
+          <div><strong>Demonstration model.</strong> The API uses a small synthetic dataset. Results are estimates for learning and software demonstration only—not validated real-world predictions or a basis for academic decisions.</div>
         </div>
+
+        <section className="panel prediction-panel" id="predict">
+          <div className="panel-header">
+            <div><h2 className="panel-title">Predict your score</h2><p className="panel-description">Fill in all seven fields. The API validates your values before running the model.</p></div>
+            <span className="metric-icon" style={{ color: "var(--green)", background: "var(--green-soft)" }}><BrainCircuit size={16} /></span>
+          </div>
+          <div className="panel-body">
+            <form onSubmit={handlePredict}>
+              <div className="prediction-fields">
+                {fields.map((field) => (
+                  <label className="prediction-field" key={field.key}>
+                    <span>{field.label}</span>
+                    <input
+                      type="number"
+                      min={field.min}
+                      max={field.max}
+                      step={field.step}
+                      required
+                      value={features[field.key]}
+                      onChange={(event) => setFeatures((current) => ({ ...current, [field.key]: Number(event.target.value) }))}
+                      aria-describedby={`hint-${field.key}`}
+                    />
+                    <small id={`hint-${field.key}`}>{field.hint}</small>
+                  </label>
+                ))}
+              </div>
+              <div className="prediction-actions">
+                <button className="outline-button" type="button" onClick={() => { setFeatures(initialFeatures); setPrediction(null); setError(""); }}>Reset values</button>
+                <button className="predict-button" type="submit" disabled={loading}>
+                  {loading ? <><LoaderCircle className="spin-icon" size={16} /> Running model…</> : <><Target size={16} /> Predict score</>}
+                </button>
+              </div>
+            </form>
+
+            {error && <div className="api-message api-error" role="alert"><AlertCircle size={18} /><div><strong>Prediction unavailable</strong><p>{error}</p><p>Make sure the FastAPI backend is running and NEXT_PUBLIC_API_URL points to it.</p></div></div>}
+            {prediction && (
+              <div className="prediction-result" aria-live="polite">
+                <div className="result-heading"><CheckCircle2 size={18} /><strong>Prediction generated</strong></div>
+                <div className="result-score">{prediction.predicted_score.toFixed(2)}<span> / 100</span></div>
+                <p className="panel-description">{prediction.message}</p>
+                <div className="result-meta"><span><strong>Model:</strong> {prediction.model_name}</span><span><strong>Dataset:</strong> {prediction.dataset}</span></div>
+                <h3 className="result-subtitle">Suggested next steps</h3>
+                <ul className="guidance-list">{prediction.guidance.map((tip) => <li key={tip}>{tip}</li>)}</ul>
+                <p className="result-disclaimer">{prediction.disclaimer}</p>
+              </div>
+            )}
+          </div>
+        </section>
 
         <div className="metrics-grid">
           <section className="panel metric-card">
             <div className="metric-heading"><span>Predicted score</span><span className="metric-icon"><Target size={16} /></span></div>
-            <div className="metric-value">— <span className="unit">/ 100</span></div>
-            <div className="metric-foot">Run a prediction to see your estimate</div>
-            <div className="score-bar"><span style={{ width: "0%" }} /></div>
+            <div className="metric-value">{prediction ? prediction.predicted_score.toFixed(1) : "—"} <span className="unit">/ 100</span></div>
+            <div className="metric-foot">{prediction ? "Latest API response" : "Run a prediction to see your estimate"}</div>
+            <div className="score-bar"><span style={{ width: `${prediction ? Math.max(0, Math.min(100, prediction.predicted_score)) : 0}%` }} /></div>
           </section>
-          <MetricCard icon={CalendarDays} label="Attendance" value="—" unit="%" note="Connect your student inputs" />
-          <MetricCard icon={Clock3} label="Study time" value="—" unit="hrs/day" note="Based on your submitted values" accent="green" />
-          <MetricCard icon={BrainCircuit} label="Practice" value="—" unit="sessions/week" note="Set a realistic weekly goal" accent="green" />
+          <MetricCard icon={CalendarDays} label="Attendance" value={String(features.attendance_percent)} unit="%" note="Your current form value" />
+          <MetricCard icon={Clock3} label="Study time" value={String(features.study_hours_per_day)} unit="hrs/day" note="Your current form value" accent="green" />
+          <MetricCard icon={BrainCircuit} label="Practice" value={String(features.practice_quizzes_per_week)} unit="sessions/week" note="Your current form value" accent="green" />
         </div>
 
         <div className="section-grid">
           <section className="panel">
             <div className="panel-header">
-              <div><h2 className="panel-title">Score outlook</h2><p className="panel-description">A place for actual results and model estimates over time.</p></div>
+              <div><h2 className="panel-title">Score outlook</h2><p className="panel-description">Real score history will appear here when stored results are available.</p></div>
               <div className="legend"><span><i /> Actual</span><span><i className="green-dot" /> Estimate</span></div>
             </div>
             <div className="panel-body">
-              <div className="demo-note" style={{ marginBottom: 12, padding: "8px 10px", fontSize: 11 }}>Chart below is illustrative only; real history is not connected yet.</div>
+              <div className="demo-note" style={{ marginBottom: 12, padding: "8px 10px", fontSize: 11 }}>This chart remains illustrative; no student history is stored yet.</div>
               <ScoreChart />
             </div>
           </section>
 
           <section className="panel">
             <div className="panel-header">
-              <div><h2 className="panel-title">Your next steps</h2><p className="panel-description">Practical actions based on your inputs will appear here.</p></div>
+              <div><h2 className="panel-title">Your next steps</h2><p className="panel-description">Recommendations returned by the API after you run a prediction.</p></div>
               <span className="metric-icon" style={{ color: "var(--green)", background: "var(--green-soft)" }}><Lightbulb size={16} /></span>
             </div>
             <div className="panel-body">
-              <div className="action-list">
-                <div className="action-row"><div className="action-number">01</div><div><div className="action-title">Build a steady study routine</div><p className="action-copy">Recommendations will use the study hours you enter, not a generic target.</p></div></div>
-                <div className="action-row"><div className="action-number">02</div><div><div className="action-title">Practice with purpose</div><p className="action-copy">Use quiz frequency and assignment completion to identify manageable next steps.</p></div></div>
-                <div className="action-row"><div className="action-number">03</div><div><div className="action-title">Review your progress</div><p className="action-copy">Compare future results only when actual history is available.</p></div></div>
-              </div>
+              {prediction ? (
+                <ul className="guidance-list">{prediction.guidance.map((tip) => <li key={tip}>{tip}</li>)}</ul>
+              ) : (
+                <div className="action-list">
+                  <div className="action-row"><div className="action-number">01</div><div><div className="action-title">Enter your habits</div><p className="action-copy">Use the prediction form above to share your current study pattern.</p></div></div>
+                  <div className="action-row"><div className="action-number">02</div><div><div className="action-title">Run the model</div><p className="action-copy">Your inputs will be sent to the FastAPI backend for an estimate.</p></div></div>
+                  <div className="action-row"><div className="action-number">03</div><div><div className="action-title">Review suggestions</div><p className="action-copy">Use the guidance as ideas to try, not guarantees of score improvement.</p></div></div>
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -150,18 +253,18 @@ export default function DashboardPage() {
         <div className="bottom-grid">
           <section className="panel">
             <div className="panel-header">
-              <div><h2 className="panel-title">Factors to explore</h2><p className="panel-description">Model feature importance will be shown here after training.</p></div>
-              <span className="status-pill"><ShieldCheck size={12} /> Model-linked later</span>
+              <div><h2 className="panel-title">Factors to explore</h2><p className="panel-description">Inputs currently supported by the model.</p></div>
+              <span className="status-pill"><ShieldCheck size={12} /> 7 input features</span>
             </div>
             <div className="panel-body">
-              {factors.map((factor) => (
-                <div className="factor-row" key={factor.name}>
-                  <div className="factor-name">{factor.name}</div>
-                  <div className="factor-track"><div className="factor-fill" style={{ width: factor.value + "%", opacity: .65 }} /></div>
-                  <div className="factor-pct">{factor.label}</div>
+              {fields.slice(0, 4).map((field) => (
+                <div className="factor-row" key={field.key}>
+                  <div className="factor-name">{field.label}</div>
+                  <div className="factor-track"><div className="factor-fill" style={{ width: `${Math.max(0, Math.min(100, (features[field.key] / field.max) * 100))}%`, opacity: .65 }} /></div>
+                  <div className="factor-pct">{features[field.key]}</div>
                 </div>
               ))}
-              <p className="panel-description" style={{ marginTop: 12 }}>Feature importance describes model behavior; it does not prove that a factor causes a score to change.</p>
+              <p className="panel-description" style={{ marginTop: 12 }}>These are input values, not feature-importance scores. A relationship learned by the model does not prove causation.</p>
             </div>
           </section>
 
@@ -171,14 +274,14 @@ export default function DashboardPage() {
               <span className="metric-icon"><Database size={16} /></span>
             </div>
             <div className="panel-body">
-              <div className="dataset-stat"><div className="stat-number">CSV</div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Upload a dataset</strong><br />Inspect columns, types, and missing values.</div></div>
-              <div className="dataset-stat"><div className="stat-number">ML</div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Review model quality</strong><br />See holdout metrics before using predictions.</div></div>
-              <div className="dataset-stat"><div className="stat-number"><Sparkles size={20} color="var(--green)" /></div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Actionable guidance</strong><br />Receive suggestions based on your own values.</div></div>
+              <div className="dataset-stat"><div className="stat-number">CSV</div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Compact demo dataset</strong><br />100 synthetic rows; missing feature values are imputed during training.</div></div>
+              <div className="dataset-stat"><div className="stat-number">ML</div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Model connected</strong><br />Prediction requests use the backend's trained Extra Trees model.</div></div>
+              <div className="dataset-stat"><div className="stat-number"><Sparkles size={20} color="var(--green)" /></div><div className="stat-label"><strong style={{ color: "#dce8f7" }}>Actionable guidance</strong><br />Suggestions reflect the values submitted in your form.</div></div>
             </div>
           </section>
         </div>
 
-        <footer className="footer-note">Student Performance Prediction System · Preview build · Predictions are estimates, not guarantees. This interface is not connected to authentication or the model yet.</footer>
+        <footer className="footer-note">Student Performance Prediction System · Frontend-to-API integration · Demo estimates only. Authentication, saved student profiles, and real score history are not connected yet.</footer>
       </main>
     </div>
   );
