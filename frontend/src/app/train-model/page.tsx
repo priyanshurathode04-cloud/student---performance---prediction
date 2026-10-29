@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import Sidebar from "../../components/Sidebar";
 import { BrainCircuit, FileUp, LoaderCircle, ShieldCheck, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
@@ -21,7 +21,7 @@ export default function TrainModelPage() {
   const [result, setResult] = useState<TrainingResult | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  async function train(event: React.FormEvent<HTMLFormElement>) {
+  async function train(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setMessage(""); setResult(null);
     if (!file) { setError("Choose a CSV dataset first."); return; }
     if (file.size > 12 * 1024 * 1024) { setError("CSV uploads are limited to 12 MiB."); return; }
