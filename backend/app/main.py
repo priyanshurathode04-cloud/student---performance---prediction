@@ -40,7 +40,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     # Vercel creates unique preview URLs for deployments; allow those origins too.
-    allow_origin_regex=r"https://[a-zA-Z0-9-]+(?:-[a-zA-Z0-9-]+)*\\.vercel\\.app",
+    allow_origin_regex=r"https://[a-zA-Z0-9-]+(?:-[a-zA-Z0-9-]+)*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
@@ -123,3 +123,18 @@ def promote_model(candidate_id: str, x_training_token: str | None = None) -> dic
     from .model_service import _load_trained_model
     _load_trained_model.cache_clear()
     return {"status": "ok", "message": "Candidate promoted. The active model cache was cleared.", "active_model_path": path}
+
+
+
+@app.get("/api/dataset-info")
+def dataset_info() -> dict:
+    """Describe the bundled demo model without exposing student-level records."""
+    from .model_service import FEATURE_COLUMNS
+    return {
+        "status": "ok",
+        "model_name": MODEL_NAME,
+        "dataset": DATASET_DESCRIPTION,
+        "features": FEATURE_COLUMNS,
+        "target": "final_score",
+        "note": "Synthetic demonstration dataset; not validated for real-world student outcomes.",
+    }
