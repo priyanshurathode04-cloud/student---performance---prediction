@@ -5,21 +5,15 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "../lib/supabase";
+import Sidebar from "../components/Sidebar";
 import {
   Activity, BrainCircuit, CalendarDays, ChartNoAxesCombined,
-  CircleHelp, Clock3, Database, GraduationCap, LayoutDashboard, Lightbulb,
-  ShieldCheck, Sparkles, Target, UserRound, LoaderCircle, AlertCircle, CheckCircle2,
+  CircleHelp, Clock3, GraduationCap, Lightbulb,
+  ShieldCheck, Sparkles, Target, LoaderCircle, AlertCircle, CheckCircle2,
 } from "lucide-react";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://student-performance-prediction-51f4.onrender.com").replace(/\/$/, "");
 
-const navItems = [
-  { label: "Overview", icon: LayoutDashboard, active: true },
-  { label: "Predict score", icon: Target, active: false },
-  { label: "My progress", icon: ChartNoAxesCombined, active: false },
-  { label: "Dataset lab", icon: Database, active: false },
-  { label: "Account", icon: UserRound, active: false },
-];
 
 const fields = [
   { key: "study_hours_per_day", label: "Study hours per day", min: 0, max: 24, step: 0.5, initial: 2.5, hint: "Time spent studying on a typical day." },
@@ -246,40 +240,8 @@ export default function DashboardPage() {
 
   return (
     <div className="app-shell" id="overview">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark"><GraduationCap size={22} /></div>
-          <div><div className="brand-name">StudyInsight</div><div className="brand-sub">Learn · Improve · Grow</div></div>
-        </div>
-        <div className="nav-label">Workspace</div>
-        <nav className="nav-list" aria-label="Main navigation">
-          {navItems.map(({ label, icon: Icon }) => {
-            const sectionByLabel: Record<string, string> = {
-              "Overview": "overview",
-              "Predict score": "predict",
-              "My progress": "progress",
-              "Dataset lab": "dataset",
-              "Account": "account",
-            };
-            const targetId = sectionByLabel[label];
-            return (
-              <a
-                className={`nav-item ${activeNav === label ? "active" : ""}`}
-                key={label}
-                href={`#${targetId}`}
-                aria-current={activeNav === label ? "location" : undefined}
-                onClick={() => setActiveNav(label)}
-              >
-                <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
-              </a>
-            );
-          })}
-        </nav>
-        <div className="sidebar-bottom">
-          <div style={{ color: "#b8cce0", marginBottom: 7 }}><span className="online-dot" />Model API integration</div>
-          Submit your study habits to receive a demo estimate and suggestions.
-        </div>
-      </aside>
+      <Sidebar active={activeNav} />
+
 
       <main className="main">
         <header className="topbar">
