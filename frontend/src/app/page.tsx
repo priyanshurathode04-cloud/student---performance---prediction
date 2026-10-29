@@ -8,7 +8,7 @@ import { getSupabaseBrowserClient } from "../lib/supabase";
 import Sidebar from "../components/Sidebar";
 import {
   Activity, BrainCircuit, CalendarDays, ChartNoAxesCombined,
-  CircleHelp, Clock3, GraduationCap, Lightbulb,
+  CircleHelp, Clock3, Database, GraduationCap, Lightbulb,
   ShieldCheck, Sparkles, Target, LoaderCircle, AlertCircle, CheckCircle2,
 } from "lucide-react";
 
