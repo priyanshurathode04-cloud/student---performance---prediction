@@ -1,21 +1,38 @@
-# FastAPI backend scaffold
+# Student Performance Prediction API
 
-This is the initial API boundary for the Next.js redesign. It intentionally does not produce predictions until the current Streamlit preprocessing and model pipeline has been extracted and tested.
+FastAPI service for the Next.js redesign.
 
-## Run locally
+## Local development
+
+From the repository root:
+
 ```bash
 python -m venv .venv
-# Windows PowerShell:
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
+pip install -r backend/requirements.txt
+uvicorn app.main:app --reload --app-dir backend --host 0.0.0.0 --port 8000
 ```
 
-- Health check: http://127.0.0.1:8000/health
-- API docs: http://127.0.0.1:8000/docs
+The API loads `data/student_performance_compact.csv` and trains an Extra Trees regression pipeline once per process. Median imputation is used for missing input features. The model is intentionally a demonstration model trained on a small synthetic dataset; it is not validated for real student outcomes.
 
-## Safety
-- `/api/predict` currently returns HTTP 503 instead of inventing a score.
-- CORS defaults to the local Next.js origin. Set `FRONTEND_ORIGIN` to the exact deployed frontend origin before deployment.
-- Do not place Supabase service-role keys or other secrets in frontend variables.
-- Do not deploy until the real model is integrated and automated tests pass.
+- Health check: `GET http://localhost:8000/health`
+- Prediction: `POST http://localhost:8000/api/predict`
+- Interactive API docs: `http://localhost:8000/docs`
+
+## Frontend connection
+
+In `frontend`, copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_API_URL` to the URL where the API is running. Restart the Next.js development server after changing environment variables.
+
+Set `FRONTEND_ORIGIN` on the backend to the frontend's exact origin for cross-origin requests. Do not use `*` with credentials enabled.
+
+## Tests
+
+From the repository root:
+
+```bash
+pip install -r backend/requirements.txt
+PYTHONPATH=backend pytest -q backend/tests
+``
+
+Predictions are for learning and demonstration only and must not be used to grade, rank, admit, or make other consequential decisions about students.
