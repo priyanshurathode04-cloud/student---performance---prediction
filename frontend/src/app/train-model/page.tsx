@@ -37,6 +37,7 @@ export default function TrainModelPage() {
   }
   async function promote() {
     if (!result) return;
+    if (!window.confirm("Promote this candidate to the active prediction model? Review the held-out metrics and dataset quality first.")) return;
     setError(""); setMessage(""); setPromoting(true);
     try {
       const response = await fetch(API_URL + "/api/train/" + result.candidate_id + "/promote", { method: "POST", headers: { "X-Training-Token": token } });
